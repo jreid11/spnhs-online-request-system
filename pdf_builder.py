@@ -79,7 +79,7 @@ def _draw_text_fit(c: canvas.Canvas, value: Any, x: float, y: float, max_width: 
 
 
 def _draw_uniform_upper(c: canvas.Canvas, value: Any, x: float, y: float, max_width: float,
-                        size: float = 8.0, align: str = "center", min_hscale: float = 68.0) -> None:
+                        size: float = 10.0, align: str = "center", min_hscale: float = 68.0) -> None:
     """Draw one-line form data in a uniform bold uppercase style.
 
     The font height remains fixed for every field. When a long value would
