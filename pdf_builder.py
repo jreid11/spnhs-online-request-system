@@ -30,6 +30,32 @@ def _clean(value: Any) -> str:
     return str(value or "").strip()
 
 
+def _format_form6_header_value(key: str, value: Any) -> str:
+    """Format Form 6 header values to match the official sample."""
+    text = _clean(value)
+    if not text:
+        return ""
+
+    if key == "date_filing":
+        # Accept YYYY-MM-DD or MM/DD/YYYY and print MM/DD/YY.
+        from datetime import datetime
+        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
+            try:
+                return datetime.strptime(text, fmt).strftime("%m/%d/%y")
+            except ValueError:
+                pass
+
+    if key == "salary":
+        # Print salary like 36,283.00 while tolerating commas/currency symbols.
+        cleaned = text.replace(",", "").replace("₱", "").replace("PHP", "").strip()
+        try:
+            return f"{float(cleaned):,.2f}"
+        except ValueError:
+            pass
+
+    return text.upper()
+
+
 def _draw_text_fit(c: canvas.Canvas, value: Any, x: float, y: float, max_width: float,
                    size: float = 8.5, min_size: float = 5.5, font: str = "Helvetica") -> None:
     text = _clean(value)
@@ -174,9 +200,9 @@ REGULAR = {
     "name_last": (470, 270, 190),
     "name_first": (690, 270, 190),
     "name_middle": (895, 270, 180),
-    "date_filing": (267, 270, 190),
-    "position": (544, 270, 190),
-    "salary": (878, 270, 190),
+    "date_filing": (267, 313, 110),
+    "position": (544, 313, 229),
+    "salary": (878, 313, 118),
     "leave_boxes_y": [412, 439, 466, 493, 520, 547, 574, 601, 628, 655, 682, 709, 736, 763],
     "leave_box_x": 134,
     "others": (132, 813, 230),
@@ -339,9 +365,10 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         ("salary", data.get("salary")),
     ):
         px, py, width_px = header_coords[key]
+        formatted_value = _format_form6_header_value(key, value)
         _draw_uniform_upper(
-            c, value, _x(px), _y(py), _x(width_px),
-            size=8.0, align="center", min_hscale=68.0
+            c, formatted_value, _x(px), _y(py), _x(width_px),
+            size=10.0, align="center", min_hscale=62.0
         )
 
     leave_type = _clean(data.get("leave_type"))
