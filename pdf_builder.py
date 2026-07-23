@@ -78,53 +78,48 @@ def _draw_text_fit(c: canvas.Canvas, value: Any, x: float, y: float, max_width: 
 
 
 
-def _draw_uniform_upper(c: canvas.Canvas, value: Any, x: float, y: float, max_width: float,
-                        size: float = 10.0, align: str = "center", min_hscale: float = 68.0) -> None:
-    """Draw one-line form data in a uniform bold uppercase style.
+def _draw_centered_bold_fit(
+    c: canvas.Canvas,
+    value: Any,
+    center_x: float,
+    baseline_y: float,
+    max_width: float,
+    max_size: float = 10.5,
+    min_size: float = 7.0,
+) -> None:
+    """Draw a bold uppercase value centered in its Form 6 field.
 
-    The font height remains fixed for every field. When a long value would
-    exceed its line or name column, only the horizontal scale is reduced.
-    This prevents one field from looking smaller than the others while also
-    keeping text inside the official form boundaries.
+    The value keeps the requested font size whenever it fits. Longer names
+    and positions are reduced gradually, but never spill into the next field.
     """
     text = _clean(value).upper()
     if not text:
         return
 
     font = "Helvetica-Bold"
+    size = max_size
+    while size > min_size and c.stringWidth(text, font, size) > max_width:
+        size -= 0.25
+
+    # Keep a small margin at both ends of the field. If an exceptionally
+    # long value still does not fit at the minimum font size, compress only
+    # its width so it remains centered and never overlaps another field.
+    usable_width = max_width * 0.94
     natural_width = c.stringWidth(text, font, size)
     hscale = 100.0
-    if natural_width > max_width and natural_width > 0:
-        hscale = max(min_hscale, (max_width / natural_width) * 99.0)
+    if natural_width > usable_width and natural_width > 0:
+        hscale = (usable_width / natural_width) * 100.0
 
-    # If the value is still too wide at the minimum horizontal scale, trim it
-    # conservatively so it cannot overlap the next printed field.
     effective_width = natural_width * hscale / 100.0
-    suffix = "..."
-    if effective_width > max_width + 0.1:
-        while text:
-            trial_width = c.stringWidth(text + suffix, font, size) * min_hscale / 100.0
-            if trial_width <= max_width:
-                text += suffix
-                natural_width = c.stringWidth(text, font, size)
-                hscale = min_hscale
-                effective_width = natural_width * hscale / 100.0
-                break
-            text = text[:-1]
-
-    if align == "left":
-        draw_x = x
-    elif align == "right":
-        draw_x = x + max_width - effective_width
-    else:
-        draw_x = x + (max_width - effective_width) / 2.0
+    draw_x = center_x - (effective_width / 2.0)
 
     text_object = c.beginText()
-    text_object.setTextOrigin(draw_x, y)
+    text_object.setTextOrigin(draw_x, baseline_y)
     text_object.setFont(font, size)
     text_object.setHorizScale(hscale)
     text_object.textOut(text)
     c.drawText(text_object)
+
 
 def _draw_multiline_fit(c: canvas.Canvas, value: Any, x: float, y: float, max_width: float,
                         max_lines: int = 2, size: float = 7.5, leading: float = 8.5) -> None:
@@ -269,35 +264,37 @@ VARIANT = {
 }
 
 
+# Header values are positioned by the visual center of each blank field.
+# Coordinates were measured from the 1275 x 1650 reference render.
 HEADER_REGULAR = {
-    "name_last": (470, 270, 190),
-    "name_first": (690, 270, 190),
-    "name_middle": (895, 270, 180),
-    "date_filing": (267, 313, 110),
-    "position": (544, 313, 229),
-    "salary": (878, 313, 118),
+    "name_last": (579, 274, 158),
+    "name_first": (739, 274, 145),
+    "name_middle": (880, 274, 145),
+    "date_filing": (322, 316, 108),
+    "position": (658, 316, 225),
+    "salary": (937, 316, 116),
 }
 
-# Monetization and terminal-leave templates share this lower header layout.
+# Monetization and terminal-leave templates.
 HEADER_COMPACT = {
-    "name_last": (500, 285, 155),
-    "name_first": (665, 285, 175),
-    "name_middle": (835, 285, 145),
-    "date_filing": (314, 333, 110),
-    "position": (591, 333, 229),
-    "salary": (928, 333, 103),
+    "name_last": (578, 289, 140),
+    "name_first": (750, 289, 135),
+    "name_middle": (900, 289, 125),
+    "date_filing": (369, 336, 106),
+    "position": (705, 336, 220),
+    "salary": (980, 336, 100),
 }
 
-# The more-than-60-days template uses the regular vertical layout but is
-# shifted slightly left on the page.
+# More-than-60-days template.
 HEADER_MORE60 = {
-    "name_last": (457, 270, 190),
-    "name_first": (677, 270, 190),
-    "name_middle": (882, 270, 180),
-    "date_filing": (254, 313, 111),
-    "position": (531, 313, 230),
-    "salary": (864, 313, 119),
+    "name_last": (566, 274, 158),
+    "name_first": (726, 274, 145),
+    "name_middle": (867, 274, 145),
+    "date_filing": (309, 316, 108),
+    "position": (645, 316, 225),
+    "salary": (924, 316, 116),
 }
+
 
 LEAVE_INDEX = {
     "Vacation Leave": 0,
@@ -364,11 +361,16 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         ("position", data.get("position")),
         ("salary", data.get("salary")),
     ):
-        px, py, width_px = header_coords[key]
+        center_px, baseline_py, width_px = header_coords[key]
         formatted_value = _format_form6_header_value(key, value)
-        _draw_uniform_upper(
-            c, formatted_value, _x(px), _y(py), _x(width_px),
-            size=10.0, align="center", min_hscale=62.0
+        _draw_centered_bold_fit(
+            c,
+            formatted_value,
+            center_x=_x(center_px),
+            baseline_y=_y(baseline_py),
+            max_width=_x(width_px),
+            max_size=10.5,
+            min_size=5.0,
         )
 
     leave_type = _clean(data.get("leave_type"))
