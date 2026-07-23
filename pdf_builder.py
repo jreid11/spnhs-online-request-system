@@ -369,8 +369,8 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
             center_x=_x(center_px),
             baseline_y=_y(baseline_py),
             max_width=_x(width_px),
-            max_size=10.5,
-            min_size=5.0,
+            max_size=16,
+            min_size=10.5,
         )
 
     leave_type = _clean(data.get("leave_type"))
