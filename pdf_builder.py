@@ -270,9 +270,9 @@ HEADER_REGULAR = {
     "name_last": (579, 274, 158),
     "name_first": (739, 274, 145),
     "name_middle": (880, 274, 145),
-    "date_filing": (322, 316, 108),
-    "position": (658, 316, 225),
-    "salary": (937, 316, 116),
+    "date_filing": (322, 320, 108),
+    "position": (658, 320, 225),
+    "salary": (937, 320, 116),
 }
 
 # Monetization and terminal-leave templates.
