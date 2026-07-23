@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Request Submitted | SPNHS-SHS{% endblock %}
+{% block content %}
+<section class="success-card">
+  <div class="success-mark">✓</div>
+  <span class="eyebrow">REQUEST RECEIVED</span>
+  <h1>Your request has been submitted.</h1>
+  <p>Save the tracking number below. It is required to check your request status.</p>
+  <div class="tracking-box"><small>TRACKING NUMBER</small><strong>{{ item['tracking_no'] }}</strong><button type="button" data-copy="{{ item['tracking_no'] }}">Copy</button></div>
+  <div class="request-summary">
+    <div><span>Document</span><strong>{{ REQUEST_TYPES[item['request_type']] }}</strong></div>
+    <div><span>Requester</span><strong>{{ item['surname'] }}, {{ item['first_name'] }}</strong></div>
+    <div><span>Status</span><strong class="status-pill">{{ item['status'] }}</strong></div>
+  </div>
+  <div class="hero-actions center">
+    <a class="btn primary" href="{{ url_for('track_request', tracking=item['tracking_no']) }}">Track Request</a>
+  </div>
+  <p class="privacy-note">Printable documents are available only to authorized Records Office administrators.</p>
+</section>
+{% endblock %}

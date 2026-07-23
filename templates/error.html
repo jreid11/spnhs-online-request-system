@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}Error {{ code }} | SPNHS-SHS{% endblock %}
+{% block content %}
+<div class="error-card"><strong>{{ code }}</strong><h1>Something went wrong.</h1><p>{{ message }}</p><a class="btn primary" href="{{ url_for('index') }}">Return Home</a></div>
+{% endblock %}

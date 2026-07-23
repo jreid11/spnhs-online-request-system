@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}SPNHS-SHS Online Records Request{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">SCHOOL RECORDS SERVICES</span>
+    <h1>Request school personnel documents online.</h1>
+    <p>Submit an Application for Leave, Certificate of Employment request, or Service Record request for Sangley Point National High School - Senior High School.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="{{ url_for('new_request') }}">Start a Request</a>
+      <a class="btn light" href="{{ url_for('track_request') }}">Track a Request</a>
+    </div>
+    <div class="trust-row">
+      <span>✓ Automatic tracking number</span>
+      <span>✓ Records Office-generated printable form</span>
+      <span>✓ Records Office status updates</span>
+    </div>
+  </div>
+  <div class="hero-emblem">
+    <div class="emblem-ring"><img src="{{ url_for('static', filename='img/spnhs_logo.png') }}" alt="SPNHS-SHS seal"></div>
+    <div class="hero-note"><strong>Official school system</strong><span>Exclusive to SPNHS-SHS personnel requests.</span></div>
+  </div>
+</section>
+
+<section class="section-block">
+  <div class="section-heading">
+    <span class="eyebrow">AVAILABLE REQUESTS</span>
+    <h2>Choose the document you need</h2>
+  </div>
+  <div class="service-grid">
+    <article class="service-card blue-card">
+      <div class="service-number">01</div>
+      <h3>Form 6</h3>
+      <p>Complete the Civil Service Form No. 6 Application for Leave online and generate the official front-and-back PDF.</p>
+      <a href="{{ url_for('new_request', type='FORM_6') }}">Request Form 6 →</a>
+    </article>
+    <article class="service-card green-card">
+      <div class="service-number">02</div>
+      <h3>Certificate of Employment</h3>
+      <p>Provide your name and first day of service to create a printable COE request for records verification.</p>
+      <a href="{{ url_for('new_request', type='COE') }}">Request COE →</a>
+    </article>
+    <article class="service-card gold-card">
+      <div class="service-number">03</div>
+      <h3>Service Record</h3>
+      <p>Submit the required personnel details and generate a formal Service Record request with a tracking number.</p>
+      <a href="{{ url_for('new_request', type='SERVICE_RECORD') }}">Request Service Record →</a>
+    </article>
+  </div>
+</section>
+
+<section class="process-panel">
+  <div>
+    <span class="eyebrow">HOW IT WORKS</span>
+    <h2>Simple from submission to release</h2>
+  </div>
+  <div class="process-steps">
+    <div><b>1</b><span><strong>Complete the form</strong><small>Enter the required personnel and document information.</small></span></div>
+    <div><b>2</b><span><strong>Save your tracking number</strong><small>Download or print the generated request PDF.</small></span></div>
+    <div><b>3</b><span><strong>Check the status</strong><small>Use the tracking page for Records Office updates.</small></span></div>
+  </div>
+</section>
+{% endblock %}

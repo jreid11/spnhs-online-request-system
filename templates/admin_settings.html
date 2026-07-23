@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}System Settings | SPNHS-SHS{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">ADMINISTRATION</span><h1>System Settings</h1><p>These details appear on COE and Service Record request PDFs.</p></div></div>
+<form method="post" class="settings-card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="form-grid two">
+    <label>School Name<input name="school_name" value="{{ settings['school_name'] }}" required></label>
+    <label>School Subtitle<input name="school_subtitle" value="{{ settings['school_subtitle'] }}" required></label>
+    <label>Division<input name="division" value="{{ settings['division'] }}" required></label>
+    <label>Region<input name="region" value="{{ settings['region'] or '' }}"></label>
+    <label class="full-span">Address<input name="address" value="{{ settings['address'] or '' }}"></label>
+    <label>Records Email<input type="email" name="records_email" value="{{ settings['records_email'] or '' }}"></label>
+    <label>Records Contact<input name="records_contact" value="{{ settings['records_contact'] or '' }}"></label>
+  </div>
+  <button class="btn primary" type="submit">Save Settings</button>
+</form>
+{% endblock %}

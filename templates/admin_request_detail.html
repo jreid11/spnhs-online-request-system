@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}{{ item['tracking_no'] }} | SPNHS-SHS{% endblock %}
+{% block content %}
+<div class="admin-heading">
+  <div><span class="eyebrow">{{ item['tracking_no'] }}</span><h1>{{ REQUEST_TYPES[item['request_type']] }}</h1><p>{{ item['surname'] }}, {{ item['first_name'] }} {{ item['middle_initial'] }}</p></div>
+  <div class="admin-actions">
+    <a class="btn primary" target="_blank" href="{{ url_for('request_pdf', tracking_no=item['tracking_no']) }}">Open PDF</a>
+    <a class="btn light" href="{{ url_for('admin_dashboard') }}">Back to Dashboard</a>
+    <form method="post" action="{{ url_for('delete_request', request_id=item['id']) }}" class="inline-form" onsubmit="return confirm('Permanently delete request {{ item['tracking_no']|e }}? This action cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn danger" type="submit">Delete Request</button>
+    </form>
+  </div>
+</div>
+
+<div class="admin-detail-grid">
+  <aside class="request-info-card">
+    <h2>Request Information</h2>
+    <dl>
+      <dt>Tracking Number</dt><dd>{{ item['tracking_no'] }}</dd>
+      <dt>Document</dt><dd>{{ REQUEST_TYPES[item['request_type']] }}</dd>
+      <dt>Surname</dt><dd>{{ item['surname'] }}</dd>
+      <dt>First Name</dt><dd>{{ item['first_name'] }}</dd>
+      {% if item['request_type']=='FORM_6' %}<dt>Middle Name</dt><dd>{{ data.get('middle_name') }}</dd>{% else %}<dt>Middle Initial</dt><dd>{{ item['middle_initial'] }}</dd><dt>First Day of Service</dt><dd>{{ item['first_day_service']|display_date }}</dd><dt>Contact Number</dt><dd>{{ item['contact_no'] or '' }}</dd>{% endif %}
+      <dt>Submitted</dt><dd>{{ item['submitted_at'][:10]|display_date }}</dd>
+      <dt>Last Updated</dt><dd>{{ item['updated_at'][:10]|display_date }}</dd>
+    </dl>
+    {% if item['request_type']=='FORM_6' %}
+    <h3>Application Summary</h3>
+    <dl>
+      <dt>Date of Filing</dt><dd>{{ data.get('date_filing')|display_date }}</dd>
+      <dt>Position</dt><dd>{{ data.get('position') }}</dd>
+      <dt>Salary</dt><dd>{{ data.get('salary') }}</dd>
+      <dt>Leave Type</dt><dd>{{ data.get('leave_type') }}</dd>
+      <dt>Working Days</dt><dd>{{ data.get('working_days') }}</dd>
+      <dt>Inclusive Dates</dt><dd>{{ data.get('inclusive_dates') }}</dd>
+      <dt>Template</dt><dd>{{ FORM_VARIANTS.get(data.get('form_variant','regular')) }}</dd>
+    </dl>
+    {% endif %}
+  </aside>
+
+  <form method="post" class="processing-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Process Request</h2>
+    <div class="form-grid two">
+      <label>Status<select name="status">{% for option in STATUS_OPTIONS %}<option {% if item['status']==option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></label>
+      <label class="full-span">Records Office Remarks<textarea name="admin_remarks" rows="3">{{ item['admin_remarks'] or '' }}</textarea></label>
+    </div>
+
+    {% if item['request_type']=='FORM_6' %}
+    <div class="admin-subsection"><h3>Form 6 Template and Section 7</h3><p>Complete these fields before printing the finalized application.</p></div>
+    <div class="form-grid two">
+      <label>Form Variant<select name="form_variant">{% for code,label in FORM_VARIANTS.items() %}<option value="{{ code }}" {% if data.get('form_variant','regular')==code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label>Certification As Of<input type="date" name="credits_as_of" value="{{ data.get('credits_as_of','') }}"></label>
+    </div>
+    <div class="credits-grid">
+      <div></div><strong>Vacation Leave</strong><strong>Sick Leave</strong>
+      <span>Total Earned</span><input name="vacation_total" value="{{ data.get('vacation_total','') }}"><input name="sick_total" value="{{ data.get('sick_total','') }}">
+      <span>Less this Application</span><input name="vacation_less" value="{{ data.get('vacation_less','') }}"><input name="sick_less" value="{{ data.get('sick_less','') }}">
+      <span>Balance</span><input name="vacation_balance" value="{{ data.get('vacation_balance','') }}"><input name="sick_balance" value="{{ data.get('sick_balance','') }}">
+    </div>
+    <div class="form-grid two top-space">
+      <label>Recommendation<select name="recommendation"><option value="">Not yet indicated</option><option {% if data.get('recommendation')=='For approval' %}selected{% endif %}>For approval</option><option {% if data.get('recommendation')=='For disapproval' %}selected{% endif %}>For disapproval</option></select></label>
+      <label>Reason for Recommendation<textarea name="recommendation_reason" rows="2">{{ data.get('recommendation_reason','') }}</textarea></label>
+      <label>Approved Days With Pay<input name="approved_with_pay" value="{{ data.get('approved_with_pay','') }}"></label>
+      <label>Approved Days Without Pay<input name="approved_without_pay" value="{{ data.get('approved_without_pay','') }}"></label>
+      <label>Approved Others<input name="approved_others" value="{{ data.get('approved_others','') }}"></label>
+      <label>Approval Date<input type="date" name="approval_date" value="{{ data.get('approval_date','') }}"></label>
+      <label class="full-span">Disapproved Due To<textarea name="disapproved_reason" rows="3">{{ data.get('disapproved_reason','') }}</textarea></label>
+    </div>
+    {% endif %}
+    <div class="save-bar"><button class="btn primary large" type="submit">Save Changes</button></div>
+  </form>
+</div>
+{% endblock %}

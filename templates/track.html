@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Track Request | SPNHS-SHS{% endblock %}
+{% block content %}
+<div class="page-heading narrow"><div><span class="eyebrow">REQUEST TRACKING</span><h1>Check your request status</h1><p>Enter the complete tracking number shown after submission.</p></div></div>
+<form method="post" class="track-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Tracking Number<input name="tracking_no" value="{{ tracking_no }}" placeholder="e.g., F6-20260722-A1B2" required></label>
+  <button class="btn primary" type="submit">Check Status</button>
+</form>
+{% if item %}
+<section class="tracking-result">
+  <div class="tracking-result-head"><div><span class="eyebrow">{{ item['tracking_no'] }}</span><h2>{{ REQUEST_TYPES[item['request_type']] }}</h2></div><span class="status-badge {{ item['status']|lower|replace(' ','-') }}">{{ item['status'] }}</span></div>
+  <div class="detail-grid">
+    <div><span>Requester</span><strong>{{ item['surname'] }}, {{ item['first_name'] }} {{ item['middle_initial'] }}</strong></div>
+    <div><span>Date Submitted</span><strong>{{ item['submitted_at'][:10]|display_date }}</strong></div>
+    <div><span>Last Updated</span><strong>{{ item['updated_at'][:10]|display_date }}</strong></div>
+    <div><span>Records Office Remarks</span><strong>{{ item['admin_remarks'] or 'No remarks have been added.' }}</strong></div>
+  </div>
+  <p class="privacy-note">The printable document is available only to the Records Office administrator.</p>
+</section>
+{% endif %}
+{% endblock %}

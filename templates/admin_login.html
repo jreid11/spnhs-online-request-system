@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Staff Login | SPNHS-SHS{% endblock %}
+{% block content %}
+<div class="login-layout">
+  <div class="login-brand"><img src="{{ url_for('static', filename='img/spnhs_logo.png') }}" alt="School logo"><span class="eyebrow">AUTHORIZED PERSONNEL ONLY</span><h1>Records Office Administration</h1><p>Review requests, update status, complete Form 6 action details, and print records.</p></div>
+  <form method="post" class="login-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Staff Login</h2>
+    <label>Username<input name="username" autocomplete="username" required></label>
+    <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+    <button class="btn primary full" type="submit">Sign In</button>
+    <p class="login-hint">Initial account: <code>admin</code> / <code>SPNHS2026!</code><br>Change the password after first login.</p>
+  </form>
+</div>
+{% endblock %}
