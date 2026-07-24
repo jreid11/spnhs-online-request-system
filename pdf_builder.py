@@ -412,8 +412,8 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         elif other_purpose == "Terminal Leave":
             _draw_x(c, coords["other_x"], coords["other_ys"][1], size=8)
 
-    field("working_days", data.get("working_days"), size=8.0)
-    field("inclusive_dates", data.get("inclusive_dates"), size=7.5)
+    field("working_days", data.get("working_days"), size=10)
+    field("inclusive_dates", data.get("inclusive_dates"), size=10)
 
     commutation = _clean(data.get("commutation"))
     if commutation == "Requested":
