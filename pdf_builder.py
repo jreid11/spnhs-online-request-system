@@ -355,9 +355,9 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
     # a larger preferred font so the date, position and salary are as visible
     # as the names. Long entries are reduced only as much as necessary.
     header_values = (
-        ("name_last", data.get("surname"), 13.0, 10.5),
-        ("name_first", data.get("first_name"), 13.0, 10.5),
-        ("name_middle", data.get("middle_name"), 13.0, 10.5),
+        ("name_last", data.get("surname"), 12.5, 10),
+        ("name_first", data.get("first_name"), 12.5, 10),
+        ("name_middle", data.get("middle_name"), 12.5, 10),
         ("date_filing", data.get("date_filing"), 11.0, 10.0),
         ("position", data.get("position"), 11.0, 10.0),
         ("salary", data.get("salary"), 11.0, 10.0),
