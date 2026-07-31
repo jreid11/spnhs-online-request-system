@@ -310,7 +310,6 @@ LEAVE_INDEX = {
     "Special Leave Benefits for Women": 10,
     "Special Emergency (Calamity) Leave": 11,
     "Adoption Leave": 12,
-    "Wellness Leave": 13,
 }
 
 
