@@ -42,7 +42,33 @@
     <div class="form-section-title"><span>3</span><div><h2>Form 6 details</h2><p>Fields follow the uploaded Civil Service Form No. 6, Revised 2020.</p></div></div>
     <div class="form-grid three">
       <label>Date of Filing <em>*</em><input type="date" name="date_filing" value="{{ form.get('date_filing','') }}"></label>
-      <label>Position <em>*</em><input name="position" value="{{ form.get('position','') }}" maxlength="100"></label>
+      <label>Position <em>*</em>
+  <select name="position" required>
+    <option value="">Select position</option>
+
+    {% set positions = [
+      'TEACHER I',
+      'TEACHER II',
+      'TEACHER III'
+      'TEACHER IV',
+      'TEACHER V',
+      'TEACHER VI'
+      'TEACHER VII'
+      'REGISTRAR I'
+      'ADMINISTRATIVE ASSISTANT II',
+      'ADMINISTRATIVE OFFICER II',
+      'ASSISTANT SCHOOL PRINCIPAL II',
+      'SCHOOL PRINCIPAL II',
+    ] %}
+
+    {% for position in positions %}
+      <option value="{{ position }}"
+        {% if form.get('position') == position %}selected{% endif %}>
+        {{ position }}
+      </option>
+    {% endfor %}
+  </select>
+</label>
       <label>Salary <em>*</em><input name="salary" value="{{ form.get('salary','') }}" maxlength="40" placeholder="e.g., ₱30,024.00"></label>
     </div>
 
