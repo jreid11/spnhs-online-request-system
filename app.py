@@ -145,7 +145,6 @@ LEAVE_TYPES = [
     "Special Leave Benefits for Women",
     "Special Emergency (Calamity) Leave",
     "Adoption Leave",
-    "Wellness Leave",
     "Others",
 ]
 
