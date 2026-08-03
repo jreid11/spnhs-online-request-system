@@ -57,6 +57,48 @@ INSTANCE_DIR = BASE_DIR / "instance"
 LOCAL_DB_PATH = INSTANCE_DIR / "spnhs_requests.db"
 SECRET_PATH = INSTANCE_DIR / ".secret_key"
 
+import base64
+from io import BytesIO
+
+from PIL import Image, UnidentifiedImageError
+
+def prepare_signature_upload(uploaded_file) -> str:
+    """Validate and convert an uploaded signature into a compact PNG data URL."""
+
+    if uploaded_file is None or not uploaded_file.filename:
+        return ""
+
+    allowed_types = {"image/png", "image/jpeg"}
+    if uploaded_file.mimetype not in allowed_types:
+        raise ValueError("Signature must be a PNG or JPG image.")
+
+    raw_data = uploaded_file.read()
+
+    if not raw_data:
+        raise ValueError("The uploaded signature file is empty.")
+
+    if len(raw_data) > 500 * 1024:
+        raise ValueError("Signature image must not exceed 500 KB.")
+
+    try:
+        image = Image.open(BytesIO(raw_data))
+        image.load()
+    except (UnidentifiedImageError, OSError):
+        raise ValueError("The uploaded signature is not a valid image.")
+
+    if image.width > 3000 or image.height > 1500:
+        raise ValueError("The signature image dimensions are too large.")
+
+    # Preserve transparent PNG backgrounds.
+    image = image.convert("RGBA")
+    image.thumbnail((900, 300))
+
+    output = BytesIO()
+    image.save(output, format="PNG", optimize=True)
+
+    encoded = base64.b64encode(output.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+    
 
 def running_on_vercel() -> bool:
     return bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV"))
@@ -544,6 +586,20 @@ def new_request():
         elif request_type == "FORM_6":
             for key in FORM6_KEYS:
                 form_data[key] = request.form.get(key, "").strip()
+                signature_file = request.files.get("applicant_signature")
+signature_consent = request.form.get("signature_consent", "").strip()
+
+try:
+    form_data["applicant_signature"] = prepare_signature_upload(signature_file)
+except ValueError as exc:
+    errors.append(str(exc))
+
+if form_data.get("applicant_signature") and signature_consent != "yes":
+    errors.append(
+        "You must confirm that the uploaded signature belongs to you."
+    )
+    if not form_data.get("applicant_signature"):
+    errors.append("Applicant signature is required for Form 6.")
             required_form6 = {
                 "middle_name": "Middle name",
                 "date_filing": "Date of filing",
