@@ -124,11 +124,10 @@ REQUEST_TYPES = {
 
 STATUS_OPTIONS = [
     "Submitted",
-    "Under Review",
-    "For Approval",
-    "Ready for Release",
-    "Completed",
-    "Returned",
+    "For Principal Approval",
+    "Submitted to SDO Records",
+    "Approved Returned to School",
+    "Disapproved Returned to School",
 ]
 
 LEAVE_TYPES = [
