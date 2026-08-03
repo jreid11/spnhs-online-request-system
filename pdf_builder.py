@@ -1,3 +1,6 @@
+import base64
+import binascii
+
 from __future__ import annotations
 
 from io import BytesIO
@@ -463,11 +466,12 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
     if commutation == "Requested":
         _draw_x(c, coords["comm_x"], coords["comm_ys"][1], size=8)
     else:
-        _draw_x(c, coords["comm_x"], coords["comm_ys"][0], size=8)
+        _draw_x(c, coords["comm_x"], coords["comm_ys"][0], size=8),
+        )
 
-    _draw_applicant_signature(
+   _draw_applicant_signature(
     c,
-    _clean(data.get("applicant_signature")),
+    data.get("applicant_signature"),
     family,
 )
 
