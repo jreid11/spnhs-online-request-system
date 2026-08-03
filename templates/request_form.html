@@ -5,7 +5,11 @@
   <div><span class="eyebrow">ONLINE REQUEST FORM</span><h1>Submit a document request</h1><p>Select the document first. The form will show only the information required for that request.</p></div>
 </div>
 
-<form method="post" class="request-card" id="requestForm" novalidate>
+<form method="post"
+      enctype="multipart/form-data"
+      class="request-card"
+      id="requestForm"
+      novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <section class="form-section">
     <div class="form-section-title"><span>1</span><div><h2>Select document</h2><p>Choose one request type.</p></div></div>
@@ -39,7 +43,8 @@
   </section>
 
   <section class="form-section form6-only">
-    <div class="form-section-title"><span>3</span><div><h2>Form 6 details</h2><p>Fields follow the uploaded Civil Service Form No. 6, Revised 2020.</p></div></div>
+    <div class="form-section-title"><span>3</span><div><h2>Form 6 details</h2><p>Fields follow the uploaded Civil Service Form No. 6, Revised 2020.</p>
+    </div></div>
     <div class="form-grid three">
       <label>Date of Filing <em>*</em><input type="date" name="date_filing" value="{{ form.get('date_filing','') }}"></label>
       <label>Position <em>*</em>
@@ -71,6 +76,34 @@
 </label>
       <label>Salary <em>*</em><input name="salary" value="{{ form.get('salary','') }}" maxlength="40" placeholder="e.g., ₱30,024.00"></label>
     </div>
+    <div class="subsection-title">Applicant E-Signature</div>
+
+<div class="form-grid two">
+  <label>
+    Upload Signature
+    <input
+      type="file"
+      name="applicant_signature"
+      accept="image/png,image/jpeg"
+    >
+    <small>
+      Upload a PNG or JPG file with a plain white or transparent background.
+      Maximum file size: 500 KB.
+    </small>
+  </label>
+
+  <label class="checkbox-label">
+    <input type="checkbox" name="signature_consent" value="yes">
+    I confirm that this is my signature and I authorize its placement
+    on this Form 6.
+  </label>
+</div> 
+<input
+  type="file"
+  name="applicant_signature"
+  accept="image/png,image/jpeg"
+  required
+>
 
     <div class="subsection-title">6.A Type of Leave to be Availed Of</div>
     <div class="form-grid two">
