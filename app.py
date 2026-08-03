@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import csv
 import hashlib
 import hmac
@@ -7,6 +8,8 @@ import io
 import json
 import os
 import secrets
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 from datetime import date, datetime, timedelta
 from functools import wraps
 from pathlib import Path
@@ -57,10 +60,7 @@ INSTANCE_DIR = BASE_DIR / "instance"
 LOCAL_DB_PATH = INSTANCE_DIR / "spnhs_requests.db"
 SECRET_PATH = INSTANCE_DIR / ".secret_key"
 
-import base64
-from io import BytesIO
 
-from PIL import Image, UnidentifiedImageError
 
 def prepare_signature_upload(uploaded_file) -> str:
     """Validate and convert an uploaded signature into a compact PNG data URL."""
@@ -586,7 +586,8 @@ def new_request():
         elif request_type == "FORM_6":
             for key in FORM6_KEYS:
                 form_data[key] = request.form.get(key, "").strip()
-                signature_file = request.files.get("applicant_signature")
+
+signature_file = request.files.get("applicant_signature")
 signature_consent = request.form.get("signature_consent", "").strip()
 
 try:
