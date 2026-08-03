@@ -323,6 +323,51 @@ def _template_for(data: Mapping[str, Any]) -> tuple[Path, str]:
         return TEMPLATE_DIR / "form6_more_than_60_days.pdf", "more60"
     return TEMPLATE_DIR / "form6_front.pdf", "regular"
 
+def _draw_applicant_signature(
+    c: canvas.Canvas,
+    signature_data: str,
+    family: str,
+) -> None:
+    """Place the applicant signature above the Form 6 signature line."""
+
+    if not signature_data:
+        return
+
+    try:
+        encoded = signature_data.split(",", 1)[1]
+        signature_bytes = base64.b64decode(encoded)
+        signature_image = ImageReader(BytesIO(signature_bytes))
+    except Exception:
+        return
+
+    # Coordinates: left, top, width and height based on the
+    # 1275 x 1650 Form 6 reference image.
+    signature_boxes = {
+        "regular": (770, 925, 330, 52),
+        "variant": (770, 945, 330, 52),
+        "more60": (770, 925, 330, 52),
+    }
+
+    left_px, top_px, width_px, height_px = signature_boxes.get(
+        family,
+        signature_boxes["regular"],
+    )
+
+    draw_x = _x(left_px)
+    draw_y = _y(top_px + height_px)
+    draw_width = _x(width_px)
+    draw_height = _x(height_px)
+
+    c.drawImage(
+        signature_image,
+        draw_x,
+        draw_y,
+        draw_width,
+        draw_height,
+        preserveAspectRatio=True,
+        anchor="c",
+        mask="auto",
+    )
 
 def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes:
     template_path, family = _template_for(data)
@@ -419,6 +464,12 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         _draw_x(c, coords["comm_x"], coords["comm_ys"][1], size=8)
     else:
         _draw_x(c, coords["comm_x"], coords["comm_ys"][0], size=8)
+
+    _draw_applicant_signature(
+    c,
+    _clean(data.get("applicant_signature")),
+    family,
+)
 
     # Section 7 - completed by the records/approving office.
     if _clean(data.get("credits_as_of")):
