@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}Submit a Request | SPNHS-SHS{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="eyebrow">ONLINE REQUEST FORM</span><h1>Submit a document request</h1><p>Select the document first. The form will show only the information required for that request.</p></div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="request-card" id="requestForm" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="form-section">
+    <div class="form-section-title"><span>1</span><div><h2>Select document</h2><p>Choose one request type.</p></div></div>
+    <div class="document-picker">
+      {% set selected_type = form.get('request_type', request.args.get('type','')) %}
+      <label class="document-option">
+        <input type="radio" name="request_type" value="FORM_6" {% if selected_type=='FORM_6' %}checked{% endif %} required>
+        <span class="doc-icon">F6</span><span><strong>Form 6</strong><small>Application for Leave</small></span>
+      </label>
+      <label class="document-option">
+        <input type="radio" name="request_type" value="COE" {% if selected_type=='COE' %}checked{% endif %} required>
+        <span class="doc-icon">CE</span><span><strong>Certificate of Employment</strong><small>Request form</small></span>
+      </label>
+      <label class="document-option">
+        <input type="radio" name="request_type" value="SERVICE_RECORD" {% if selected_type=='SERVICE_RECORD' %}checked{% endif %} required>
+        <span class="doc-icon">SR</span><span><strong>Service Record</strong><small>Request form</small></span>
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="form-section-title"><span>2</span><div><h2>Employee information</h2><p>Use your official name in DepEd records.</p></div></div>
+    <div class="form-grid three">
+      <label>Surname <em>*</em><input name="surname" value="{{ form.get('surname','') }}" maxlength="80" autocomplete="family-name" required></label>
+      <label>First Name <em>*</em><input name="first_name" value="{{ form.get('first_name','') }}" maxlength="80" autocomplete="given-name" required></label>
+      <label class="simple-only">Middle Initial <em>*</em><input name="middle_initial" value="{{ form.get('middle_initial','') }}" maxlength="3" placeholder="e.g., R"></label>
+      <label class="form6-only">Middle Name <em>*</em><input name="middle_name" value="{{ form.get('middle_name','') }}" maxlength="80"></label>
+      <label class="simple-only">Date of First Day of Service <em>*</em><input type="date" name="first_day_service" value="{{ form.get('first_day_service','') }}"></label>
+      <label class="simple-only">Contact Number <em>*</em><input type="tel" name="contact_no" value="{{ form.get('contact_no','') }}" maxlength="30" autocomplete="tel" placeholder="e.g., 0917 123 4567"></label>
+    </div>
+  </section>
+
+  <section class="form-section form6-only">
+    <div class="form-section-title"><span>3</span><div><h2>Form 6 details</h2><p>Fields follow the uploaded Civil Service Form No. 6, Revised 2020.</p></div></div>
+    <div class="form-grid three">
+      <label>Date of Filing <em>*</em><input type="date" name="date_filing" value="{{ form.get('date_filing','') }}"></label>
+      <label>Position <em>*</em>
+        <select name="position" required>
+          <option value="">Select position</option>
+          {% set positions = [
+            'ADMINISTRATIVE AIDE VI',
+            'ADMINISTRATIVE ASSISTANT II',
+            'ADMINISTRATIVE ASSISTANT III',
+            'ADMINISTRATIVE OFFICER II',
+            'ADMINISTRATIVE OFFICER V',
+            'GUIDANCE COUNSELOR I',
+            'HEAD TEACHER I',
+            'HEAD TEACHER II',
+            'HEAD TEACHER III',
+            'HEAD TEACHER IV',
+            'HEAD TEACHER V',
+            'HEAD TEACHER VI',
+            'MASTER TEACHER I',
+            'MASTER TEACHER II',
+            'MASTER TEACHER III',
+            'MASTER TEACHER IV',
+            'SCHOOL PRINCIPAL I',
+            'SCHOOL PRINCIPAL II',
+            'SCHOOL PRINCIPAL III',
+            'SCHOOL PRINCIPAL IV',
+            'TEACHER I',
+            'TEACHER II',
+            'TEACHER III'
+          ] %}
+          {% for position in positions %}
+            <option value="{{ position }}" {% if form.get('position') == position %}selected{% endif %}>{{ position }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Salary <em>*</em><input name="salary" value="{{ form.get('salary','') }}" maxlength="40" placeholder="e.g., ₱30,024.00"></label>
+    </div>
+
+    <div class="subsection-title">6.A Type of Leave to be Availed Of</div>
+    <div class="form-grid two">
+      <label>Type of Leave <em>*</em>
+        <select name="leave_type" data-leave-type>
+          <option value="">Select leave type</option>
+          {% for leave in LEAVE_TYPES %}<option value="{{ leave }}" {% if form.get('leave_type')==leave %}selected{% endif %}>{{ leave }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="other-leave-field">Specify Other Leave<input name="other_leave_type" value="{{ form.get('other_leave_type','') }}" maxlength="120"></label>
+    </div>
+
+    <div class="subsection-title">6.B Details of Leave</div>
+    <div class="form-grid two">
+      <label>Applicable Detail
+        <select name="leave_detail_mode">
+          <option value="">Not applicable / Select detail</option>
+          {% for option in ['Within the Philippines','Abroad','In Hospital','Out Patient','Special Leave Benefits for Women'] %}
+            <option value="{{ option }}" {% if form.get('leave_detail_mode')==option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Place / Illness / Details<input name="leave_detail_text" value="{{ form.get('leave_detail_text','') }}" maxlength="180"></label>
+      <label>Study Leave Purpose
+        <select name="study_purpose">
+          <option value="">Not applicable</option>
+          {% for option in ["Completion of Master's Degree",'BAR/Board Examination Review'] %}<option {% if form.get('study_purpose')==option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Other Purpose
+        <select name="other_purpose">
+          <option value="">Not applicable</option>
+          {% for option in ['Monetization of Leave Credits','Terminal Leave'] %}<option {% if form.get('other_purpose')==option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <div class="subsection-title">6.C-6.D Leave Period and Commutation</div>
+    <div class="form-grid three">
+      <label>Number of Working Days <em>*</em><input type="number" min="0.5" step="0.5" name="working_days" value="{{ form.get('working_days','') }}"></label>
+      <label>Inclusive Dates <em>*</em><input name="inclusive_dates" value="{{ form.get('inclusive_dates','') }}" maxlength="120" placeholder="e.g., July 27-31, 2026"></label>
+      <label>Commutation <em>*</em>
+        <select name="commutation"><option value="Not Requested" {% if form.get('commutation','Not Requested')=='Not Requested' %}selected{% endif %}>Not Requested</option><option value="Requested" {% if form.get('commutation')=='Requested' %}selected{% endif %}>Requested</option></select>
+      </label>
+    </div>
+
+    <div class="subsection-title">Applicant E-Signature</div>
+    <div class="form-grid two">
+      <label>Upload Signature
+        <input type="file" name="applicant_signature" accept="image/png,image/jpeg">
+        <small>Upload PNG or JPG with a plain white or transparent background. Maximum file size: 500 KB.</small>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="signature_consent" value="yes">
+        I confirm that this is my signature and authorize its placement on this Form 6.
+      </label>
+    </div>
+
+    <div class="info-box"><strong>Form template selection is automatic.</strong> Monetization, Terminal Leave, and applications exceeding 60 working days use the matching uploaded Form 6 layout.</div>
+  </section>
+
+  <div class="submit-row">
+    <p>After submission, the system will issue a tracking number. Printable documents are generated only in the admin area.</p>
+    <button class="btn primary large" type="submit">Submit Request</button>
+  </div>
+</form>
+{% endblock %}
