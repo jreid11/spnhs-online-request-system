@@ -110,7 +110,7 @@ MAX_SIGNATURE_BYTES = 500 * 1024
 
 
 def prepare_signature_upload(uploaded_file) -> str:
-    """Validate, crop, resize and encode an applicant signature as PNG."""
+    """Validate, remove a light background, crop, resize and encode a signature as PNG."""
     if uploaded_file is None or not uploaded_file.filename:
         return ""
 
@@ -131,25 +131,45 @@ def prepare_signature_upload(uploaded_file) -> str:
     if image.width > 4000 or image.height > 2000:
         raise ValueError("The signature image dimensions are too large.")
 
+    # Flatten any existing transparency over white first, then build a new
+    # alpha channel from brightness. This removes white/light paper while
+    # preserving dark or coloured signature strokes.
     rgba = image.convert("RGBA")
-    white = Image.new("RGB", rgba.size, "white")
-    white.paste(rgba, mask=rgba.getchannel("A"))
-    gray = ImageOps.grayscale(white)
-    ink_mask = gray.point(lambda pixel: 255 if pixel < 245 else 0)
-    bbox = ink_mask.getbbox()
+    white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+    white_bg.alpha_composite(rgba)
+
+    gray = ImageOps.grayscale(white_bg.convert("RGB"))
+
+    def signature_alpha(pixel: int) -> int:
+        # Pure/light background becomes transparent. Dark ink stays opaque.
+        # The middle range fades smoothly to avoid jagged signature edges.
+        if pixel >= 245:
+            return 0
+        if pixel <= 185:
+            return 255
+        return int((245 - pixel) * 255 / 60)
+
+    alpha = gray.point(signature_alpha)
+
+    cleaned = white_bg.copy()
+    cleaned.putalpha(alpha)
+
+    # Crop transparent space around the actual signature.
+    bbox = alpha.getbbox()
     if bbox:
         left, top, right, bottom = bbox
         pad = 12
-        rgba = rgba.crop((
+        cleaned = cleaned.crop((
             max(0, left - pad),
             max(0, top - pad),
-            min(rgba.width, right + pad),
-            min(rgba.height, bottom + pad),
+            min(cleaned.width, right + pad),
+            min(cleaned.height, bottom + pad),
         ))
 
-    rgba.thumbnail((1200, 400))
+    cleaned.thumbnail((1200, 400))
+
     output = io.BytesIO()
-    rgba.save(output, format="PNG", optimize=True)
+    cleaned.save(output, format="PNG", optimize=True)
     encoded = base64.b64encode(output.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
