@@ -110,7 +110,11 @@ MAX_SIGNATURE_BYTES = 500 * 1024
 
 
 def prepare_signature_upload(uploaded_file) -> str:
-    """Clean an uploaded e-signature and store it as a transparent PNG."""
+    """
+    Remove the paper/background from an uploaded e-signature while retaining
+    dark or coloured pen strokes. The stored result is a cropped transparent
+    PNG with anti-aliased edges.
+    """
     if uploaded_file is None or not uploaded_file.filename:
         return ""
 
@@ -138,55 +142,45 @@ def prepare_signature_upload(uploaded_file) -> str:
     gray = ImageOps.grayscale(rgb)
 
     w, h = rgb.size
-    border_samples = []
-    step_x = max(1, w // 80)
-    step_y = max(1, h // 80)
-    for x in range(0, w, step_x):
-        border_samples.extend((rgb.getpixel((x, 0)), rgb.getpixel((x, h - 1))))
-    for y in range(0, h, step_y):
-        border_samples.extend((rgb.getpixel((0, y)), rgb.getpixel((w - 1, y))))
-
-    if border_samples:
-        bg_r = sum(p[0] for p in border_samples) / len(border_samples)
-        bg_g = sum(p[1] for p in border_samples) / len(border_samples)
-        bg_b = sum(p[2] for p in border_samples) / len(border_samples)
-    else:
-        bg_r = bg_g = bg_b = 255.0
-
     pixels = rgb.load()
     gray_pixels = gray.load()
+
     alpha = Image.new("L", rgb.size, 0)
     alpha_pixels = alpha.load()
 
     for y in range(h):
         for x in range(w):
             r, g, b = pixels[x, y]
-            color_distance = (
-                (r - bg_r) ** 2 + (g - bg_g) ** 2 + (b - bg_b) ** 2
-            ) ** 0.5
             brightness = gray_pixels[x, y]
-            darkness = max(0.0, min(1.0, (246 - brightness) / 72.0))
-            colour = max(0.0, min(1.0, (color_distance - 8.0) / 62.0))
-            strength = max(darkness, colour)
+            chroma = max(r, g, b) - min(r, g, b)
 
-            if brightness >= 244 and color_distance < 22:
+            # Dark ink is retained strongly. Bright neutral paper, gray shadows,
+            # and scanner/phone background are removed completely.
+            darkness_strength = max(0.0, min(1.0, (220 - brightness) / 70.0))
+            colour_strength = max(0.0, min(1.0, (chroma - 18) / 70.0))
+            strength = max(darkness_strength, colour_strength)
+
+            # Aggressively remove light/neutral background.
+            if brightness >= 220 and chroma < 28:
                 strength = 0.0
-            elif brightness >= 232 and color_distance < 14:
-                strength *= 0.25
+            elif brightness >= 205 and chroma < 18:
+                strength = 0.0
 
             alpha_pixels[x, y] = int(round(strength * 255))
 
-    alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.7))
-    alpha = alpha.point(lambda p: 0 if p < 18 else p)
+    # Preserve smooth pen edges without leaving a visible rectangular haze.
+    alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.45))
+    alpha = alpha.point(lambda p: 0 if p < 36 else min(255, int((p - 36) * 1.16)))
 
     cleaned = rgb.convert("RGBA")
     cleaned.putalpha(alpha)
 
-    crop_mask = alpha.point(lambda p: 255 if p >= 24 else 0)
+    # Crop to the visible signature only.
+    crop_mask = alpha.point(lambda p: 255 if p >= 45 else 0)
     bbox = crop_mask.getbbox()
     if bbox:
         left, top, right, bottom = bbox
-        pad = 12
+        pad = 8
         cleaned = cleaned.crop((
             max(0, left - pad),
             max(0, top - pad),
@@ -198,6 +192,7 @@ def prepare_signature_upload(uploaded_file) -> str:
 
     output = io.BytesIO()
     cleaned.save(output, format="PNG", optimize=True)
+
     encoded = base64.b64encode(output.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
