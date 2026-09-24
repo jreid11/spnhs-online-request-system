@@ -187,6 +187,44 @@ def _draw_line_field(
     c.drawText(text_object)
 
 
+def _draw_centered_line_field(
+    c: canvas.Canvas,
+    value: Any,
+    px: float,
+    py: float,
+    width_px: float,
+    size: float = 8.0,
+    min_size: float = 6.0,
+    font: str = "Helvetica",
+) -> None:
+    """Center a value horizontally above the blank underline."""
+    text = _clean(value)
+    if not text:
+        return
+
+    max_width = _x(width_px) * 0.94
+    current_size = size
+    while current_size > min_size and c.stringWidth(text, font, current_size) > max_width:
+        current_size -= 0.2
+
+    natural_width = c.stringWidth(text, font, current_size)
+    hscale = 100.0
+    if natural_width > max_width and natural_width > 0:
+        hscale = max(72.0, (max_width / natural_width) * 100.0)
+
+    effective_width = natural_width * hscale / 100.0
+    center_x = _x(px + width_px / 2.0)
+    draw_x = center_x - effective_width / 2.0
+
+    text_object = c.beginText()
+    # Positive offset moves the baseline upward, clear of the printed underline.
+    text_object.setTextOrigin(draw_x, _y(py) + 4.6)
+    text_object.setFont(font, current_size)
+    text_object.setHorizScale(hscale)
+    text_object.textOut(text)
+    c.drawText(text_object)
+
+
 def _draw_x(c: canvas.Canvas, px: float, py: float, size: float = 9.0) -> None:
     """Draw a centered X inside the target checkbox area.
 
@@ -246,8 +284,8 @@ REGULAR = {
     "study_ys": [703, 730],
     "other_x": 690,
     "other_ys": [778, 805],
-    "working_days": (145, 871, 235),
-    "inclusive_dates": (145, 923, 235),
+    "working_days": (145, 871, 310),
+    "inclusive_dates": (145, 923, 310),
     "comm_x": 690,
     "comm_ys": [870, 898],
     "credits_asof": (205, 1036, 165),
@@ -282,8 +320,8 @@ VARIANT = {
     "study_ys": [723, 750],
     "other_x": 694,
     "other_ys": [804, 830],
-    "working_days": (188, 891, 235),
-    "inclusive_dates": (188, 944, 235),
+    "working_days": (188, 891, 315),
+    "inclusive_dates": (188, 944, 315),
     "comm_x": 694,
     "comm_ys": [888, 916],
     "credits_asof": (248, 1061, 165),
@@ -553,8 +591,22 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         _draw_x(c, 690 if family == "regular" else 694, 523 if family == "regular" else 536, size=8)
         field("hospital", data.get("leave_detail_text"), size=6.8)
     elif detail_mode == "Out Patient":
-        _draw_x(c, 690 if family == "regular" else 694, 550 if family == "regular" else 563, size=8)
-        field("outpatient", data.get("leave_detail_text"), size=6.8)
+        _draw_x(
+            c,
+            690 if family == "regular" else 694,
+            550 if family == "regular" else 563,
+            size=8,
+        )
+        px, py, width_px = coords["outpatient"]
+        _draw_centered_line_field(
+            c,
+            data.get("leave_detail_text"),
+            px,
+            py,
+            width_px,
+            size=7.0,
+            min_size=5.8,
+        )
     elif detail_mode == "Special Leave Benefits for Women":
         field("women", data.get("leave_detail_text"), size=6.8)
 
@@ -572,8 +624,27 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         elif other_purpose == "Terminal Leave":
             _draw_x(c, coords["other_x"], coords["other_ys"][1], size=8)
 
-    field("working_days", data.get("working_days"), size=8.0)
-    field("inclusive_dates", data.get("inclusive_dates"), size=7.5)
+    px, py, width_px = coords["working_days"]
+    _draw_centered_line_field(
+        c,
+        data.get("working_days"),
+        px,
+        py,
+        width_px,
+        size=8.5,
+        min_size=7.0,
+    )
+
+    px, py, width_px = coords["inclusive_dates"]
+    _draw_centered_line_field(
+        c,
+        data.get("inclusive_dates"),
+        px,
+        py,
+        width_px,
+        size=8.0,
+        min_size=6.2,
+    )
 
     commutation = _clean(data.get("commutation"))
     if commutation == "Requested":
