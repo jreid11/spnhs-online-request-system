@@ -180,7 +180,7 @@ def _draw_line_field(
         hscale = max(72.0, (usable_width / natural_width) * 100.0)
 
     text_object = c.beginText()
-    text_object.setTextOrigin(_x(px), _y(py) - 1.2)
+    text_object.setTextOrigin(_x(px), _y(py) + 3.8)
     text_object.setFont(font, current_size)
     text_object.setHorizScale(hscale)
     text_object.textOut(text)
@@ -350,7 +350,7 @@ LEAVE_INDEX = {
 
 
 def _draw_applicant_signature(c: canvas.Canvas, signature_data: Any, family: str) -> None:
-    """Clean and draw the applicant signature with a transparent background."""
+    """Render only the visible pen strokes of the applicant signature."""
     value = _clean(signature_data)
     if not value:
         return
@@ -367,21 +367,6 @@ def _draw_applicant_signature(c: canvas.Canvas, signature_data: Any, family: str
         gray = ImageOps.grayscale(rgb)
         w, h = rgb.size
 
-        border_samples = []
-        step_x = max(1, w // 80)
-        step_y = max(1, h // 80)
-        for x in range(0, w, step_x):
-            border_samples.extend((rgb.getpixel((x, 0)), rgb.getpixel((x, h - 1))))
-        for y in range(0, h, step_y):
-            border_samples.extend((rgb.getpixel((0, y)), rgb.getpixel((w - 1, y))))
-
-        if border_samples:
-            bg_r = sum(p[0] for p in border_samples) / len(border_samples)
-            bg_g = sum(p[1] for p in border_samples) / len(border_samples)
-            bg_b = sum(p[2] for p in border_samples) / len(border_samples)
-        else:
-            bg_r = bg_g = bg_b = 255.0
-
         pixels = rgb.load()
         gray_pixels = gray.load()
         alpha = Image.new("L", rgb.size, 0)
@@ -390,35 +375,31 @@ def _draw_applicant_signature(c: canvas.Canvas, signature_data: Any, family: str
         for y in range(h):
             for x in range(w):
                 r, g, b = pixels[x, y]
-                color_distance = (
-                    (r - bg_r) ** 2
-                    + (g - bg_g) ** 2
-                    + (b - bg_b) ** 2
-                ) ** 0.5
                 brightness = gray_pixels[x, y]
+                chroma = max(r, g, b) - min(r, g, b)
 
-                darkness = max(0.0, min(1.0, (246 - brightness) / 72.0))
-                colour = max(0.0, min(1.0, (color_distance - 8.0) / 62.0))
-                strength = max(darkness, colour)
+                darkness_strength = max(0.0, min(1.0, (220 - brightness) / 70.0))
+                colour_strength = max(0.0, min(1.0, (chroma - 18) / 70.0))
+                strength = max(darkness_strength, colour_strength)
 
-                if brightness >= 244 and color_distance < 22:
+                if brightness >= 220 and chroma < 28:
                     strength = 0.0
-                elif brightness >= 232 and color_distance < 14:
-                    strength *= 0.25
+                elif brightness >= 205 and chroma < 18:
+                    strength = 0.0
 
                 alpha_pixels[x, y] = int(round(strength * 255))
 
-        alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.7))
-        alpha = alpha.point(lambda p: 0 if p < 18 else p)
+        alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.45))
+        alpha = alpha.point(lambda p: 0 if p < 36 else min(255, int((p - 36) * 1.16)))
 
         cleaned = rgb.convert("RGBA")
         cleaned.putalpha(alpha)
 
-        crop_mask = alpha.point(lambda p: 255 if p >= 24 else 0)
+        crop_mask = alpha.point(lambda p: 255 if p >= 45 else 0)
         bbox = crop_mask.getbbox()
         if bbox:
             left, top, right, bottom = bbox
-            pad = 12
+            pad = 8
             cleaned = cleaned.crop((
                 max(0, left - pad),
                 max(0, top - pad),
