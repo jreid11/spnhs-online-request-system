@@ -50,7 +50,7 @@ from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.pool import NullPool
 from werkzeug.middleware.proxy_fix import ProxyFix
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageOps, ImageFilter, UnidentifiedImageError
 
 from pdf_builder import build_form6_pdf, build_simple_request_pdf
 
@@ -110,7 +110,7 @@ MAX_SIGNATURE_BYTES = 500 * 1024
 
 
 def prepare_signature_upload(uploaded_file) -> str:
-    """Validate, remove a light background, crop, resize and encode a signature as PNG."""
+    """Clean an uploaded e-signature and store it as a transparent PNG."""
     if uploaded_file is None or not uploaded_file.filename:
         return ""
 
@@ -131,31 +131,59 @@ def prepare_signature_upload(uploaded_file) -> str:
     if image.width > 4000 or image.height > 2000:
         raise ValueError("The signature image dimensions are too large.")
 
-    # Flatten any existing transparency over white first, then build a new
-    # alpha channel from brightness. This removes white/light paper while
-    # preserving dark or coloured signature strokes.
-    rgba = image.convert("RGBA")
-    white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
-    white_bg.alpha_composite(rgba)
+    source = image.convert("RGBA")
+    white_bg = Image.new("RGBA", source.size, (255, 255, 255, 255))
+    white_bg.alpha_composite(source)
+    rgb = white_bg.convert("RGB")
+    gray = ImageOps.grayscale(rgb)
 
-    gray = ImageOps.grayscale(white_bg.convert("RGB"))
+    w, h = rgb.size
+    border_samples = []
+    step_x = max(1, w // 80)
+    step_y = max(1, h // 80)
+    for x in range(0, w, step_x):
+        border_samples.extend((rgb.getpixel((x, 0)), rgb.getpixel((x, h - 1))))
+    for y in range(0, h, step_y):
+        border_samples.extend((rgb.getpixel((0, y)), rgb.getpixel((w - 1, y))))
 
-    def signature_alpha(pixel: int) -> int:
-        # Pure/light background becomes transparent. Dark ink stays opaque.
-        # The middle range fades smoothly to avoid jagged signature edges.
-        if pixel >= 245:
-            return 0
-        if pixel <= 185:
-            return 255
-        return int((245 - pixel) * 255 / 60)
+    if border_samples:
+        bg_r = sum(p[0] for p in border_samples) / len(border_samples)
+        bg_g = sum(p[1] for p in border_samples) / len(border_samples)
+        bg_b = sum(p[2] for p in border_samples) / len(border_samples)
+    else:
+        bg_r = bg_g = bg_b = 255.0
 
-    alpha = gray.point(signature_alpha)
+    pixels = rgb.load()
+    gray_pixels = gray.load()
+    alpha = Image.new("L", rgb.size, 0)
+    alpha_pixels = alpha.load()
 
-    cleaned = white_bg.copy()
+    for y in range(h):
+        for x in range(w):
+            r, g, b = pixels[x, y]
+            color_distance = (
+                (r - bg_r) ** 2 + (g - bg_g) ** 2 + (b - bg_b) ** 2
+            ) ** 0.5
+            brightness = gray_pixels[x, y]
+            darkness = max(0.0, min(1.0, (246 - brightness) / 72.0))
+            colour = max(0.0, min(1.0, (color_distance - 8.0) / 62.0))
+            strength = max(darkness, colour)
+
+            if brightness >= 244 and color_distance < 22:
+                strength = 0.0
+            elif brightness >= 232 and color_distance < 14:
+                strength *= 0.25
+
+            alpha_pixels[x, y] = int(round(strength * 255))
+
+    alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.7))
+    alpha = alpha.point(lambda p: 0 if p < 18 else p)
+
+    cleaned = rgb.convert("RGBA")
     cleaned.putalpha(alpha)
 
-    # Crop transparent space around the actual signature.
-    bbox = alpha.getbbox()
+    crop_mask = alpha.point(lambda p: 255 if p >= 24 else 0)
+    bbox = crop_mask.getbbox()
     if bbox:
         left, top, right, bottom = bbox
         pad = 12
@@ -166,13 +194,12 @@ def prepare_signature_upload(uploaded_file) -> str:
             min(cleaned.height, bottom + pad),
         ))
 
-    cleaned.thumbnail((1200, 400))
+    cleaned.thumbnail((1200, 400), Image.Resampling.LANCZOS)
 
     output = io.BytesIO()
     cleaned.save(output, format="PNG", optimize=True)
     encoded = base64.b64encode(output.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
-
 
 app = Flask(__name__, static_folder="public", static_url_path="")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
