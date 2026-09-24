@@ -196,6 +196,7 @@ def _draw_centered_line_field(
     size: float = 8.0,
     min_size: float = 6.0,
     font: str = "Helvetica",
+    y_offset: float = 4.6,
 ) -> None:
     """Center a value horizontally above the blank underline."""
     text = _clean(value)
@@ -218,7 +219,7 @@ def _draw_centered_line_field(
 
     text_object = c.beginText()
     # Positive offset moves the baseline upward, clear of the printed underline.
-    text_object.setTextOrigin(draw_x, _y(py) + 4.6)
+    text_object.setTextOrigin(draw_x, _y(py) + y_offset)
     text_object.setFont(font, current_size)
     text_object.setHorizScale(hscale)
     text_object.textOut(text)
@@ -633,6 +634,7 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         width_px,
         size=8.5,
         min_size=7.0,
+        y_offset=1.8,
     )
 
     px, py, width_px = coords["inclusive_dates"]
@@ -644,6 +646,7 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
         width_px,
         size=8.0,
         min_size=6.2,
+        y_offset=1.8,
     )
 
     commutation = _clean(data.get("commutation"))
