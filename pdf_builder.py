@@ -6,7 +6,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Mapping, Any
 
-from PIL import Image
+from PIL import Image, ImageOps, ImageFilter
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
@@ -350,7 +350,7 @@ LEAVE_INDEX = {
 
 
 def _draw_applicant_signature(c: canvas.Canvas, signature_data: Any, family: str) -> None:
-    """Draw the applicant signature above the signature line on Form 6."""
+    """Clean and draw the applicant signature with a transparent background."""
     value = _clean(signature_data)
     if not value:
         return
@@ -358,12 +358,85 @@ def _draw_applicant_signature(c: canvas.Canvas, signature_data: Any, family: str
     try:
         payload = value.split(",", 1)[1] if "," in value else value
         raw = base64.b64decode(payload, validate=True)
-        image = ImageReader(BytesIO(raw))
+
+        source = Image.open(BytesIO(raw)).convert("RGBA")
+        white_bg = Image.new("RGBA", source.size, (255, 255, 255, 255))
+        white_bg.alpha_composite(source)
+
+        rgb = white_bg.convert("RGB")
+        gray = ImageOps.grayscale(rgb)
+        w, h = rgb.size
+
+        border_samples = []
+        step_x = max(1, w // 80)
+        step_y = max(1, h // 80)
+        for x in range(0, w, step_x):
+            border_samples.extend((rgb.getpixel((x, 0)), rgb.getpixel((x, h - 1))))
+        for y in range(0, h, step_y):
+            border_samples.extend((rgb.getpixel((0, y)), rgb.getpixel((w - 1, y))))
+
+        if border_samples:
+            bg_r = sum(p[0] for p in border_samples) / len(border_samples)
+            bg_g = sum(p[1] for p in border_samples) / len(border_samples)
+            bg_b = sum(p[2] for p in border_samples) / len(border_samples)
+        else:
+            bg_r = bg_g = bg_b = 255.0
+
+        pixels = rgb.load()
+        gray_pixels = gray.load()
+        alpha = Image.new("L", rgb.size, 0)
+        alpha_pixels = alpha.load()
+
+        for y in range(h):
+            for x in range(w):
+                r, g, b = pixels[x, y]
+                color_distance = (
+                    (r - bg_r) ** 2
+                    + (g - bg_g) ** 2
+                    + (b - bg_b) ** 2
+                ) ** 0.5
+                brightness = gray_pixels[x, y]
+
+                darkness = max(0.0, min(1.0, (246 - brightness) / 72.0))
+                colour = max(0.0, min(1.0, (color_distance - 8.0) / 62.0))
+                strength = max(darkness, colour)
+
+                if brightness >= 244 and color_distance < 22:
+                    strength = 0.0
+                elif brightness >= 232 and color_distance < 14:
+                    strength *= 0.25
+
+                alpha_pixels[x, y] = int(round(strength * 255))
+
+        alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.7))
+        alpha = alpha.point(lambda p: 0 if p < 18 else p)
+
+        cleaned = rgb.convert("RGBA")
+        cleaned.putalpha(alpha)
+
+        crop_mask = alpha.point(lambda p: 255 if p >= 24 else 0)
+        bbox = crop_mask.getbbox()
+        if bbox:
+            left, top, right, bottom = bbox
+            pad = 12
+            cleaned = cleaned.crop((
+                max(0, left - pad),
+                max(0, top - pad),
+                min(cleaned.width, right + pad),
+                min(cleaned.height, bottom + pad),
+            ))
+
+        cleaned.thumbnail((1200, 400), Image.Resampling.LANCZOS)
+
+        signature_buffer = BytesIO()
+        cleaned.save(signature_buffer, format="PNG", optimize=True)
+        signature_buffer.seek(0)
+
+        image = ImageReader(signature_buffer)
         image_width, image_height = image.getSize()
     except (ValueError, TypeError, binascii.Error, OSError):
         return
 
-    # Coordinates are measured from the 1275 x 1650 Form 6 templates.
     boxes = {
         "regular": (790, 847, 320, 76),
         "variant": (785, 865, 320, 76),
@@ -391,7 +464,6 @@ def _draw_applicant_signature(c: canvas.Canvas, signature_data: Any, family: str
         preserveAspectRatio=True,
         mask="auto",
     )
-
 
 def _template_for(data: Mapping[str, Any]) -> tuple[Path, str]:
     variant = _clean(data.get("form_variant")).lower()
