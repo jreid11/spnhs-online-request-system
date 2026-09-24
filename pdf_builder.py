@@ -153,6 +153,40 @@ def _draw_multiline_fit(c: canvas.Canvas, value: Any, x: float, y: float, max_wi
         c.drawString(x, y - index * leading, line)
 
 
+def _draw_line_field(
+    c: canvas.Canvas,
+    value: Any,
+    px: float,
+    py: float,
+    width_px: float,
+    size: float = 7.2,
+    min_size: float = 5.8,
+    font: str = "Helvetica",
+) -> None:
+    """Place text neatly on the form underline without touching its label."""
+    text = _clean(value)
+    if not text:
+        return
+
+    max_width = _x(width_px)
+    current_size = size
+    while current_size > min_size and c.stringWidth(text, font, current_size) > max_width:
+        current_size -= 0.2
+
+    natural_width = c.stringWidth(text, font, current_size)
+    usable_width = max_width * 0.98
+    hscale = 100.0
+    if natural_width > usable_width and natural_width > 0:
+        hscale = max(72.0, (usable_width / natural_width) * 100.0)
+
+    text_object = c.beginText()
+    text_object.setTextOrigin(_x(px), _y(py) - 1.2)
+    text_object.setFont(font, current_size)
+    text_object.setHorizScale(hscale)
+    text_object.textOut(text)
+    c.drawText(text_object)
+
+
 def _draw_x(c: canvas.Canvas, px: float, py: float, size: float = 9.0) -> None:
     """Draw a centered X inside the target checkbox area.
 
@@ -203,8 +237,8 @@ REGULAR = {
     "leave_boxes_y": [412, 439, 466, 493, 520, 547, 574, 601, 628, 655, 682, 709, 736, 763],
     "leave_box_x": 134,
     "others": (132, 813, 230),
-    "within": (735, 447, 170),
-    "abroad": (735, 474, 170),
+    "within": (800, 447, 250),
+    "abroad": (800, 474, 250),
     "hospital": (713, 579, 335),
     "outpatient": (713, 579, 335),
     "women": (713, 657, 335),
@@ -239,8 +273,8 @@ VARIANT = {
     "leave_boxes_y": [433, 459, 485, 512, 538, 565, 591, 618, 644, 671, 697, 724, 750],
     "leave_box_x": 177,
     "others": (169, 811, 225),
-    "within": (731, 460, 176),
-    "abroad": (731, 486, 176),
+    "within": (795, 460, 245),
+    "abroad": (795, 486, 245),
     "hospital": (713, 590, 320),
     "outpatient": (713, 590, 320),
     "women": (713, 669, 320),
@@ -429,11 +463,39 @@ def build_form6_pdf(data: Mapping[str, Any], include_back: bool = True) -> bytes
 
     detail_mode = _clean(data.get("leave_detail_mode"))
     if detail_mode == "Within the Philippines":
-        _draw_x(c, 690 if family == "regular" else 694, 444 if family == "regular" else 458, size=8)
-        field("within", data.get("leave_detail_text"), size=7.2)
+        _draw_x(
+            c,
+            690 if family == "regular" else 694,
+            444 if family == "regular" else 458,
+            size=8,
+        )
+        px, py, width_px = coords["within"]
+        _draw_line_field(
+            c,
+            data.get("leave_detail_text"),
+            px,
+            py,
+            width_px,
+            size=7.2,
+            min_size=5.8,
+        )
     elif detail_mode == "Abroad":
-        _draw_x(c, 690 if family == "regular" else 694, 471 if family == "regular" else 484, size=8)
-        field("abroad", data.get("leave_detail_text"), size=7.2)
+        _draw_x(
+            c,
+            690 if family == "regular" else 694,
+            471 if family == "regular" else 484,
+            size=8,
+        )
+        px, py, width_px = coords["abroad"]
+        _draw_line_field(
+            c,
+            data.get("leave_detail_text"),
+            px,
+            py,
+            width_px,
+            size=7.2,
+            min_size=5.8,
+        )
     elif detail_mode == "In Hospital":
         _draw_x(c, 690 if family == "regular" else 694, 523 if family == "regular" else 536, size=8)
         field("hospital", data.get("leave_detail_text"), size=6.8)
