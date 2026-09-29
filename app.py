@@ -655,13 +655,21 @@ def new_request():
 
             signature_file = request.files.get("applicant_signature")
             signature_consent = request.form.get("signature_consent", "").strip()
-            try:
-                form_data["applicant_signature"] = prepare_signature_upload(signature_file)
-            except ValueError as exc:
-                errors.append(str(exc))
 
-            if form_data.get("applicant_signature") and signature_consent != "yes":
-                errors.append("Confirm that the uploaded signature belongs to you.")
+            if signature_file is None or not signature_file.filename:
+                errors.append("Applicant e-signature is required for Form 6.")
+                form_data["applicant_signature"] = ""
+            else:
+                try:
+                    form_data["applicant_signature"] = prepare_signature_upload(signature_file)
+                except ValueError as exc:
+                    errors.append(str(exc))
+                    form_data["applicant_signature"] = ""
+
+            if signature_consent != "yes":
+                errors.append(
+                    "You must confirm that the uploaded signature is yours and authorize its placement on Form 6."
+                )
 
         if errors:
             for error in errors:
