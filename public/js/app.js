@@ -14,7 +14,7 @@
       input.required = selected && (selected.value === 'COE' || selected.value === 'SERVICE_RECORD');
     });
     document.querySelectorAll('.form6-only input, .form6-only select').forEach(input => {
-      const requiredNames = ['middle_name','date_filing','position','salary','leave_type','working_days','inclusive_dates','commutation'];
+      const requiredNames = ['middle_name','date_filing','position','salary','leave_type','working_days','inclusive_dates','commutation','applicant_signature','signature_consent'];
       input.required = selected && selected.value === 'FORM_6' && requiredNames.includes(input.name);
     });
   }
