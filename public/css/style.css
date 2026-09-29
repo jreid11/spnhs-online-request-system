@@ -136,3 +136,39 @@ dl{margin:0}dt{font-size:.7rem;color:var(--muted);text-transform:uppercase;lette
 @media(max-width:760px){
   .nav-shell{min-height:72px}.brand img{width:48px;height:48px}.brand strong{font-size:.86rem}.brand small{font-size:.68rem}.nav-toggle{display:block}nav{display:none;position:absolute;left:0;right:0;top:76px;background:white;border-bottom:1px solid var(--line);padding:15px 4%;flex-direction:column;align-items:stretch;gap:0;box-shadow:0 14px 30px rgba(0,0,0,.08)}nav.open{display:flex}nav a,.nav-link-button{padding:11px 0;text-align:left}.page{padding-top:25px}.hero{padding:30px 24px;border-radius:20px}.hero h1{font-size:2.35rem}.trust-row{display:grid;gap:7px}.section-block{padding-top:45px}.process-panel{padding:23px}.footer-grid{grid-template-columns:1fr}.footer-right{text-align:left}.page-heading,.admin-heading{align-items:flex-start;flex-direction:column}.admin-actions{justify-content:flex-start}.form-section{padding:23px 19px}.form-grid.two,.form-grid.three{grid-template-columns:1fr}.form-grid .full-span{grid-column:auto}.submit-row{align-items:stretch;flex-direction:column}.submit-row .btn{width:100%}.success-card{padding:30px 18px}.success-card h1{font-size:2rem}.request-summary,.detail-grid{grid-template-columns:1fr}.track-form{grid-template-columns:1fr}.tracking-result-head{flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr)}.filter-panel{grid-template-columns:1fr}.filter-panel label:first-child{grid-column:auto}.filter-panel .btn{width:100%}.credits-grid{grid-template-columns:1fr 1fr}.credits-grid>div:first-child{display:none}.credits-grid span{grid-column:1/-1;margin-top:8px}.login-brand{padding:10px}.login-card{padding:23px}
 }
+
+/* Form 6 e-signature confirmation */
+.signature-consent-wrap{
+  display:flex;
+  align-items:center;
+  min-height:72px;
+}
+.signature-consent{
+  display:flex;
+  flex-direction:row;
+  align-items:flex-start;
+  gap:12px;
+  width:100%;
+  cursor:pointer;
+  font-size:.88rem;
+  font-weight:800;
+  line-height:1.45;
+  color:#2e4559;
+}
+.signature-consent input[type="checkbox"]{
+  width:16px;
+  height:16px;
+  min-width:16px;
+  margin:3px 0 0;
+  padding:0;
+  border-radius:3px;
+  box-shadow:none;
+}
+.signature-consent span{
+  display:block;
+  max-width:460px;
+}
+.signature-consent em{
+  color:var(--red);
+  font-style:normal;
+}
